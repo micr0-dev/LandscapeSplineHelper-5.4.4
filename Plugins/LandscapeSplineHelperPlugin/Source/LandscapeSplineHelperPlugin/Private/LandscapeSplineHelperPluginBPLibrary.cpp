@@ -2,6 +2,7 @@
 
 #include "LandscapeSplineHelperPluginBPLibrary.h"
 
+#include "Components/SplineComponent.h"
 #include "EngineUtils.h"
 #include "Landscape.h"
 #include "LandscapeInfo.h"
@@ -56,7 +57,7 @@ void ULandscapeSplineHelperPluginBPLibrary::GetLandscapeSpline(ULandscapeSpline*
 
 void ULandscapeSplineHelperPluginBPLibrary::ConvertLandscapeSplineToSplinePoints(
 	const ULandscapeSpline* LandscapeSpline,
-	TArray<FLandscapeSplinePointData>& SplinePoints,
+	TArray<FSplinePoint>& SplinePoints,
 	bool& bSuccess)
 {
 	SplinePoints.Empty();
@@ -174,10 +175,18 @@ void ULandscapeSplineHelperPluginBPLibrary::ConvertLandscapeSplineToSplinePoints
 		if (!NextSeg) LeaveTLen  = ArriveTLen;
 
 		const FVector Forward = CPWrapper->GetWorldForwardVector();
-		FLandscapeSplinePointData Point;
-		Point.WorldLocation  = CPWrapper->GetWorldLocation();
-		Point.ArriveTangent  = Forward * ArriveTLen;
-		Point.LeaveTangent   = Forward * LeaveTLen;
+
+		// FSplinePoint::Type must be CurveCustomTangent so the engine uses our
+		// precomputed tangents instead of recomputing them from positions.
+		// (AddSplineWorldPoint uses CurveAuto which silently ignores custom tangents.)
+		FSplinePoint Point;
+		Point.InputKey      = static_cast<float>(SplinePoints.Num());
+		Point.Position      = CPWrapper->GetWorldLocation(); // world space; works when SplineComponent is at world origin
+		Point.ArriveTangent = Forward * ArriveTLen;
+		Point.LeaveTangent  = Forward * LeaveTLen;
+		Point.Rotation      = FRotator::ZeroRotator;
+		Point.Scale         = FVector::OneVector;
+		Point.Type          = ESplinePointType::CurveCustomTangent;
 		SplinePoints.Add(Point);
 
 		if (!NextSeg) break;
