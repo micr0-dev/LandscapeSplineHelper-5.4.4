@@ -50,6 +50,15 @@ public:
 	float GetEndFalloff() {return original->EndFalloff;}
 
 	
+	/**
+	 * World-space forward direction at this control point.
+	 * ULandscapeSplineControlPoint::Rotation is stored in world space, so
+	 * Rotation.Vector() gives the correct world-space tangent direction directly.
+	 * Multiply by a segment connection's TangentLen to get the full tangent vector.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category=LandscapeSpline)
+	FVector GetWorldForwardVector() { return original->Rotation.Vector(); }
+
 	void Init(ULandscapeSplineControlPoint* orig, FTransform worldTransform)
 	{
 		this->original = orig;
@@ -57,6 +66,9 @@ public:
 	};
 
 	ULandscapeControlPointWrapper() {}
+
+	/** C++ only: returns the underlying engine object so callers can compare identity across wrapper instances. */
+	ULandscapeSplineControlPoint* GetOriginalControlPoint() const { return original; }
 
 private:
 	ULandscapeSplineControlPoint* original = nullptr;
